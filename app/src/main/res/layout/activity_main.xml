@@ -6,14 +6,14 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <ListView
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/myRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:id="@+id/myListView"
-        android:layout_gravity="top"
-        android:layout_margin="20dp">
-    </ListView>
+        android:layout_gravity="top">
+
+    </android.support.v7.widget.RecyclerView>
 
     <Button
         android:id="@+id/scanWifi"

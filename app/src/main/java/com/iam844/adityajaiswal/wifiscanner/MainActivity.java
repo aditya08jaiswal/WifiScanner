@@ -11,6 +11,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -20,7 +22,7 @@ import android.widget.TextView;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements WiFiListAdapter.OnItemClicked {
 
     WifiManager wifiManager;
     WifiReceiver wifiReceiver;
@@ -28,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
     WiFiListAdapter wifiListAdapter;
     ListView wifiListView;
     List wifiList;
+    RecyclerView wifiRecyclerView;
+    WifiViewHolder wifiViewHolder;
 
     String[] s1;
 
@@ -51,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initialize() {
-        wifiListView = findViewById(R.id.myListView);
+        wifiRecyclerView = findViewById(R.id.myRecyclerView);
         scanWifiBtn = findViewById(R.id.scanWifi);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -69,12 +73,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        wifiListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-                showWifiPasswordDialog(view, position);
-            }
-        });
+    }
+
+
+    @Override
+    public void onItemClick(int position) {
+        showWifiPasswordDialog(position);
     }
 
     private void scanWifiList() {
@@ -86,10 +90,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void setAdapter() {
         wifiListAdapter = new WiFiListAdapter(getApplicationContext(), wifiList);
-        wifiListView.setAdapter(wifiListAdapter);
+
+        wifiRecyclerView.setAdapter(wifiListAdapter);
+        wifiRecyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+
+        wifiListAdapter.setOnClick(MainActivity.this);
     }
 
-    public void showWifiPasswordDialog(View view, int position) {
+    public void showWifiPasswordDialog(int position) {
 
         final AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
         View mView = getLayoutInflater().inflate(R.layout.wifi_password_dialog, null);
@@ -118,6 +126,8 @@ public class MainActivity extends AppCompatActivity {
                 final String nameSSID = s1[1];
                 final String namePass = inputPassword.getText().toString();
                 connectToWifi(nameSSID, namePass);
+
+                alertDialog.dismiss();
 
             }
         });
@@ -156,16 +166,16 @@ public class MainActivity extends AppCompatActivity {
 
         int netId = wifiManager.addNetwork(wifiConfig);
 
-        /*
-         * Note: calling disconnect or reconnect should not be required. enableNetwork(net, true)
-         * second parameter is defined as boolean enableNetwork (int netId, boolean attemptConnect).
-         *
-         * Testing on Android Moto E (2nd gen) Andriod 6.0 the .reconnect() call would cause it to
-         * reconnect ot the 'normal' wifi because connecting to the group is a bit slow.
-         *
-         * This method works without the .reconnect() as tested on Android 4.4.2 Samsung Galaxy ACE
-         * and Moto E (2nd gen).
-         */
+            /*
+             * Note: calling disconnect or reconnect should not be required. enableNetwork(net, true)
+             * second parameter is defined as boolean enableNetwork (int netId, boolean attemptConnect).
+             *
+             * Testing on Android Moto E (2nd gen) Andriod 6.0 the .reconnect() call would cause it to
+             * reconnect ot the 'normal' wifi because connecting to the group is a bit slow.
+             *
+             * This method works without the .reconnect() as tested on Android 4.4.2 Samsung Galaxy ACE
+             * and Moto E (2nd gen).
+             */
         wifiManager.disconnect();
         boolean successful = wifiManager.enableNetwork(netId, true);
     }
@@ -187,5 +197,6 @@ public class MainActivity extends AppCompatActivity {
 
         return maxPriority;
     }
+
 
 }
