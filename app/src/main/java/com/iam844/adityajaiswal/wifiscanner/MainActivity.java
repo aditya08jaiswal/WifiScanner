@@ -14,30 +14,25 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements WiFiListAdapter.OnItemClicked {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
+
     WifiManager wifiManager;
     WifiReceiver wifiReceiver;
-
     WiFiListAdapter wifiListAdapter;
-    ListView wifiListView;
     List wifiList;
     RecyclerView wifiRecyclerView;
-    WifiViewHolder wifiViewHolder;
 
-    String[] s1;
-
+    String[] NetworkSSID;
     Button scanWifiBtn;
-
-    private static final String TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +40,10 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
         setContentView(R.layout.activity_main);
 
         initialize();
-
         if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, 0);
         }
-
         executeListener();
-
     }
 
     private void initialize() {
@@ -68,13 +60,14 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
         scanWifiBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                wifiManager.setWifiEnabled(true);
+
+                if (!wifiManager.isWifiEnabled()) {
+                    wifiManager.setWifiEnabled(true);
+                }
                 scanWifiList();
             }
         });
-
     }
-
 
     @Override
     public void onItemClick(int position) {
@@ -83,7 +76,6 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
 
     private void scanWifiList() {
         wifiManager.startScan();
-
         wifiList = wifiManager.getScanResults();
         setAdapter();
     }
@@ -108,10 +100,10 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
 
         final TextView wifiSSID = mView.findViewById(R.id.wifi_SSID);
 
-        String newVar = wifiList.get(position).toString();
-        String[] s0 = newVar.split(",");
-        s1 = s0[0].split(": ");
-        wifiSSID.setText(s1[1]);
+        String toCutSSID = wifiList.get(position).toString();
+        String[] s0 = toCutSSID.split(",");
+        NetworkSSID = s0[0].split(": ");
+        wifiSSID.setText(NetworkSSID[1]);
 
         alert.setView(mView);
 
@@ -122,13 +114,11 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
             @Override
             public void onClick(View v) {
 
-
-                final String nameSSID = s1[1];
+                final String nameSSID = NetworkSSID[1];
                 final String namePass = inputPassword.getText().toString();
                 connectToWifi(nameSSID, namePass);
 
                 alertDialog.dismiss();
-
             }
         });
 
@@ -140,23 +130,14 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
         });
 
         alertDialog.show();
-
     }
 
-    public static String normalizeAndroidWifiSsid(String ssid) {
-        if(ssid == null)
-            return ssid;
-        else
-            return ssid.replace("\"", "");
-    }
-
-    /**
-     * Call this to connect to a wifi network - it will trigger the WIFI_STATE_CHANGED broadcast.
-     *
-     * @param ssid
-     * @param passphrase
-     */
     public void connectToWifi(String ssid, String passphrase) {
+        if(isConnectedTo(ssid)){
+            Toast.makeText(getApplicationContext(),"Already connected to " + ssid,Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         WifiConfiguration wifiConfig = new WifiConfiguration();
         wifiConfig.SSID = "\""+ ssid +"\"";
         wifiConfig.priority=(getMaxConfigurationPriority(wifiManager)+1);
@@ -164,32 +145,25 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
         wifiConfig.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
         wifiConfig.priority = getMaxConfigurationPriority(wifiManager);
 
+        //Add network
         int netId = wifiManager.addNetwork(wifiConfig);
-
-            /*
-             * Note: calling disconnect or reconnect should not be required. enableNetwork(net, true)
-             * second parameter is defined as boolean enableNetwork (int netId, boolean attemptConnect).
-             *
-             * Testing on Android Moto E (2nd gen) Andriod 6.0 the .reconnect() call would cause it to
-             * reconnect ot the 'normal' wifi because connecting to the group is a bit slow.
-             *
-             * This method works without the .reconnect() as tested on Android 4.4.2 Samsung Galaxy ACE
-             * and Moto E (2nd gen).
-             */
         wifiManager.disconnect();
         boolean successful = wifiManager.enableNetwork(netId, true);
+        wifiManager.reconnect();
+
+        if (successful == true) {
+            Toast.makeText(getApplicationContext(),"Successfully connected",Toast.LENGTH_SHORT).show();
+        }else {
+            Toast.makeText(getApplicationContext(),"Not connected",Toast.LENGTH_SHORT).show();
+        }
+
     }
 
-    /**
-     * Get maximum priority assigned to a network configuration.
-     * This helps to prioritize which network to connect to.
-     *
-     * @param wifiManager
-     * @return int: Maximum configuration priority number.
-     */
     private int getMaxConfigurationPriority(final WifiManager wifiManager) {
+
         final List<WifiConfiguration> configurations = wifiManager.getConfiguredNetworks();
         int maxPriority = 0;
+
         for(final WifiConfiguration config : configurations) {
             if(config.priority > maxPriority)
                 maxPriority = config.priority;
@@ -198,5 +172,10 @@ public class MainActivity extends AppCompatActivity implements WiFiListAdapter.O
         return maxPriority;
     }
 
-
+    public boolean isConnectedTo(String ssid){
+        if(wifiManager.getConnectionInfo().getSSID() == ssid){
+            return true;
+        }
+        return false;
+    }
 }

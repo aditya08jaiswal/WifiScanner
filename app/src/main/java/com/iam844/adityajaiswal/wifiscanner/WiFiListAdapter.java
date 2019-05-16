@@ -8,8 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
-
 import java.util.List;
 
 public class WiFiListAdapter extends RecyclerView.Adapter<WifiViewHolder> {
@@ -72,18 +70,6 @@ public class WiFiListAdapter extends RecyclerView.Adapter<WifiViewHolder> {
         this.onClick = onClick;
     }
 
-
-
-//    private final View.OnClickListener mOnClickListener = new View.OnClickListener() {
-//        @Override
-//        public void onClick(View view) {
-//
-//            int itemPosition = mRecyclerView.getChildLayoutPosition(view);
-//            String item = mList.get(itemPosition);
-//            Toast.makeText(mContext, item, Toast.LENGTH_LONG).show();
-//
-//        }
-//    };
 }
 
 
